@@ -5,31 +5,52 @@ import "react-calendar/dist/Calendar.css";
 export default function Home() {
   const [events, setEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [view, setView] = useState("home"); // Hier definieren wir den Zustand für die Ansicht
+  const [view, setView] = useState("home");
+  const [newEvent, setNewEvent] = useState("");
 
-  const [newEvent, setNewEvent] = useState(""); // Für neue Event-Beschreibungen
-
-  // Lädt gespeicherte Events aus localStorage, wenn die Komponente geladen wird
+  // Lädt Events aus localStorage und überprüft auf Fehler
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedEvents = localStorage.getItem("termine");
-      if (savedEvents) {
-        setEvents(JSON.parse(savedEvents));
+      try {
+        const savedEvents = localStorage.getItem("termine");
+        if (savedEvents) {
+          const parsedEvents = JSON.parse(savedEvents);
+          // Stelle sicher, dass date als Date-Objekt gespeichert wird
+          const eventsWithDate = parsedEvents.map((event) => ({
+            ...event,
+            date: new Date(event.date),
+          }));
+          setEvents(eventsWithDate);
+        }
+      } catch (error) {
+        console.error("Fehler beim Laden der Termine aus localStorage:", error);
       }
     }
   }, []);
 
-  // Speichert Events in localStorage
+  // Speichert Events in localStorage mit Fehlerbehandlung
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("termine", JSON.stringify(events));
+      try {
+        // Stelle sicher, dass date immer ein Date-Objekt ist
+        const eventsToSave = events.map((event) => ({
+          ...event,
+          date: event.date.toISOString(), // Speichern als ISO-String
+        }));
+        localStorage.setItem("termine", JSON.stringify(eventsToSave));
+      } catch (error) {
+        console.error("Fehler beim Speichern der Termine in localStorage:", error);
+      }
     }
   }, [events]);
 
-  // Funktion zum Hinzufügen eines neuen Termins
+  // Fügt einen neuen Termin hinzu
   const handleAddEvent = (date) => {
-    const newEventObj = { date, text: newEvent };
-    setEvents([...events, newEventObj]);
+    if (newEvent.trim() === "") {
+      return; // Verhindert das Hinzufügen eines leeren Termins
+    }
+    const newEventObj = { date: new Date(date), text: newEvent };
+    setEvents((prevEvents) => [...prevEvents, newEventObj]);
     setNewEvent(""); // Leert das Eingabefeld nach dem Hinzufügen
   };
 
