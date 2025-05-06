@@ -54,6 +54,14 @@ export default function Home() {
     setNewEvent(""); // Leert das Eingabefeld nach dem Hinzufügen
   };
 
+  // Löscht einen Termin
+  const handleDeleteEvent = (eventToDelete) => {
+    const updatedEvents = events.filter(
+      (event) => event !== eventToDelete
+    );
+    setEvents(updatedEvents); // Aktualisiert den State
+  };
+
   return (
     <main style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
       <h1>Unsere gemeinsame Seite 💑</h1>
@@ -113,7 +121,21 @@ export default function Home() {
                 (e) => e.date.toDateString() === selectedDate.toDateString()
               )
               .map((e, i) => (
-                <li key={i}>📌 {e.text}</li>
+                <li key={i}>
+                  📌 {e.text}
+                  <button
+                    onClick={() => handleDeleteEvent(e)}
+                    style={{
+                      marginLeft: "10px",
+                      color: "red",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ❌
+                  </button>
+                </li>
               ))}
           </ul>
         </div>
