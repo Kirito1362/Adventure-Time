@@ -179,47 +179,95 @@ const handleDeleteImage = (indexToDelete) => {
       )}
 
       {view === "galerie" && (
- <div>
-  <h2>🖼️ Galerie</h2>
-  <input
-    type="file"
-    accept="image/*"
-    onChange={handleImageUpload}
-    style={{ marginBottom: "1rem" }}
-  />
+  <div>
+    <h2>🖼️ Galerie</h2>
+    <input
+      type="file"
+      accept="image/*"
+      onChange={handleImageUpload}
+      style={{ marginBottom: "1rem" }}
+    />
 
-  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-    {images.map((img, index) => (
-      <div key={index} style={{ position: "relative" }}>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+      {images.map((img, index) => (
+        <div key={index} style={{ position: "relative" }}>
+          <img
+            src={img}
+            alt={`Bild ${index}`}
+            style={{
+              width: "150px",
+              height: "150px",
+              objectFit: "cover",
+              cursor: "pointer",
+            }}
+            onClick={() => setSelectedImage(img)}
+          />
+          <button
+            onClick={() => handleDeleteImage(index)}
+            style={{
+              position: "absolute",
+              top: 5,
+              right: 5,
+              background: "rgba(255,0,0,0.7)",
+              color: "white",
+              border: "none",
+              borderRadius: "50%",
+              cursor: "pointer",
+            }}
+          >
+            ✖
+          </button>
+        </div>
+      ))}
+    </div>
+
+    {selectedImage && (
+      <div
+        onClick={() => setSelectedImage(null)}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          background: "rgba(0,0,0,0.8)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 1000,
+        }}
+      >
         <img
-          src={img}
-          alt={`Bild ${index}`}
+          src={selectedImage}
+          alt="Vorschau"
           style={{
-            width: "150px",
-            height: "150px",
-            objectFit: "cover",
-            cursor: "pointer",
+            maxWidth: "90%",
+            maxHeight: "90%",
+            borderRadius: "10px",
+            boxShadow: "0 0 10px rgba(0,0,0,0.5)",
           }}
-          onClick={() => setSelectedImage(img)}
+          onClick={(e) => e.stopPropagation()}
         />
         <button
-          onClick={() => handleDeleteImage(index)}
+          onClick={() => setSelectedImage(null)}
           style={{
             position: "absolute",
-            top: 5,
-            right: 5,
-            background: "rgba(255,0,0,0.7)",
+            top: "20px",
+            right: "30px",
+            fontSize: "2rem",
             color: "white",
+            background: "transparent",
             border: "none",
-            borderRadius: "50%",
             cursor: "pointer",
           }}
         >
-          ✖
+          ❌
         </button>
       </div>
-    ))}
+    )}
   </div>
+)}
+
 
   {selectedImage && (
     <div
