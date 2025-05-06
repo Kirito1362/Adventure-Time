@@ -2,8 +2,18 @@
 import { useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import { useEffect } from "react";
 
 export default function Home() {
+  useEffect(() => {
+  const savedEvents = localStorage.getItem("termine");
+  if (savedEvents) {
+    setEvents(JSON.parse(savedEvents));
+  }
+}, []);
+  useEffect(() => {
+  localStorage.setItem("termine", JSON.stringify(events));
+}, [events]);
   const [view, setView] = useState("home");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [events, setEvents] = useState([]);
