@@ -1,5 +1,41 @@
 
 import { useState } from "react";
+import Calendar from "react-calendar";
+import 'react-calendar/dist/Calendar.css';
+
+const [selectedDate, setSelectedDate] = useState(new Date());
+const [events, setEvents] = useState([]);
+const [newEvent, setNewEvent] = useState("");
+
+{view === "kalender" && (
+  <div>
+    <h2>📅 Kalender</h2>
+    <Calendar onChange={setSelectedDate} value={selectedDate} />
+    <p className="mt-4">Ausgewählt: {selectedDate.toDateString()}</p>
+    <input
+      placeholder="Terminbeschreibung"
+      value={newEvent}
+      onChange={(e) => setNewEvent(e.target.value)}
+    />
+    <button
+      onClick={() => {
+        if (!newEvent) return;
+        setEvents([...events, { date: selectedDate, text: newEvent }]);
+        setNewEvent("");
+      }}
+    >
+      ➕ Termin hinzufügen
+    </button>
+
+    <ul style={{ marginTop: "1rem" }}>
+      {events
+        .filter(e => e.date.toDateString() === selectedDate.toDateString())
+        .map((e, i) => (
+          <li key={i}>📌 {e.text}</li>
+        ))}
+    </ul>
+  </div>
+)}
 
 export default function Home() {
   const [view, setView] = useState("home");
