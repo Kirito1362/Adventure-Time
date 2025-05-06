@@ -7,6 +7,42 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [view, setView] = useState("home");
   const [newEvent, setNewEvent] = useState("");
+  const [images, setImages] = useState([]);
+
+// Lade gespeicherte Bilder
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    const savedImages = localStorage.getItem("bilder");
+    if (savedImages) {
+      setImages(JSON.parse(savedImages));
+    }
+  }
+}, []);
+
+// Speichere Bilder bei Änderungen
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("bilder", JSON.stringify(images));
+  }
+}, [images]);
+
+// Bild als Base64 lesen
+const handleImageUpload = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImages((prevImages) => [...prevImages, reader.result]);
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+// Löschen eines Bildes
+const handleDeleteImage = (indexToDelete) => {
+  const updatedImages = images.filter((_, i) => i !== indexToDelete);
+  setImages(updatedImages);
+};
 
   // Lädt Events aus localStorage und überprüft auf Fehler
   useEffect(() => {
@@ -142,11 +178,43 @@ export default function Home() {
       )}
 
       {view === "galerie" && (
-        <div>
-          <h2>🖼️ Galerie</h2>
-          <p>Hier könnt ihr Fotos hochladen und gemeinsam ansehen.</p>
+  <div>
+    <h2>🖼️ Galerie</h2>
+    <input
+      type="file"
+      accept="image/*"
+      onChange={handleImageUpload}
+      style={{ marginBottom: "1rem" }}
+    />
+
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+      {images.map((img, index) => (
+        <div key={index} style={{ position: "relative" }}>
+          <img
+            src={img}
+            alt={`Bild ${index}`}
+            style={{ width: "150px", height: "150px", objectFit: "cover" }}
+          />
+          <button
+            onClick={() => handleDeleteImage(index)}
+            style={{
+              position: "absolute",
+              top: 5,
+              right: 5,
+              background: "rgba(255,0,0,0.7)",
+              color: "white",
+              border: "none",
+              borderRadius: "50%",
+              cursor: "pointer",
+            }}
+          >
+            ✖
+          </button>
         </div>
-      )}
+      ))}
+    </div>
+  </div>
+)}
 
       {view === "notizen" && (
         <div>
