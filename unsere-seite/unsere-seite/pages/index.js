@@ -1,44 +1,19 @@
 
 import { useState } from "react";
 import Calendar from "react-calendar";
-import 'react-calendar/dist/Calendar.css';
-
-const [selectedDate, setSelectedDate] = useState(new Date());
-const [events, setEvents] = useState([]);
-const [newEvent, setNewEvent] = useState("");
-
-{view === "kalender" && (
-  <div>
-    <h2>📅 Kalender</h2>
-    <Calendar onChange={setSelectedDate} value={selectedDate} />
-    <p className="mt-4">Ausgewählt: {selectedDate.toDateString()}</p>
-    <input
-      placeholder="Terminbeschreibung"
-      value={newEvent}
-      onChange={(e) => setNewEvent(e.target.value)}
-    />
-    <button
-      onClick={() => {
-        if (!newEvent) return;
-        setEvents([...events, { date: selectedDate, text: newEvent }]);
-        setNewEvent("");
-      }}
-    >
-      ➕ Termin hinzufügen
-    </button>
-
-    <ul style={{ marginTop: "1rem" }}>
-      {events
-        .filter(e => e.date.toDateString() === selectedDate.toDateString())
-        .map((e, i) => (
-          <li key={i}>📌 {e.text}</li>
-        ))}
-    </ul>
-  </div>
-)}
+import "react-calendar/dist/Calendar.css";
 
 export default function Home() {
   const [view, setView] = useState("home");
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [events, setEvents] = useState([]);
+  const [newEvent, setNewEvent] = useState("");
+
+  const addEvent = () => {
+    if (!newEvent) return;
+    setEvents([...events, { date: selectedDate, text: newEvent }]);
+    setNewEvent("");
+  };
 
   return (
     <main style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
@@ -48,10 +23,55 @@ export default function Home() {
         <button onClick={() => setView("galerie")}>🖼️ Galerie</button>{" "}
         <button onClick={() => setView("notizen")}>📝 Notizen</button>
       </div>
-      {view === "home" && <p>Willkommen! Nutzt das Menü oben, um Termine, Fotos oder Notizen zu teilen.</p>}
-      {view === "kalender" && <p><strong>Kalender:</strong> Hier könnt ihr Termine eintragen.</p>}
-      {view === "galerie" && <p><strong>Galerie:</strong> Hier könnt ihr Fotos hochladen und ansehen.</p>}
-      {view === "notizen" && <p><strong>Notizen:</strong> Hier könnt ihr Gedanken festhalten.</p>}
+
+      {view === "home" && (
+        <p>
+          Willkommen! Nutzt das Menü oben, um Termine, Fotos oder Notizen zu
+          teilen.
+        </p>
+      )}
+
+      {view === "kalender" && (
+        <div>
+          <h2>📅 Kalender</h2>
+          <Calendar onChange={setSelectedDate} value={selectedDate} />
+          <p style={{ marginTop: "1rem" }}>
+            Ausgewählt: <strong>{selectedDate.toDateString()}</strong>
+          </p>
+          <input
+            type="text"
+            placeholder="Terminbeschreibung"
+            value={newEvent}
+            onChange={(e) => setNewEvent(e.target.value)}
+            style={{ marginTop: "0.5rem", marginRight: "0.5rem" }}
+          />
+          <button onClick={addEvent}>➕ Termin hinzufügen</button>
+
+          <ul style={{ marginTop: "1rem" }}>
+            {events
+              .filter(
+                (e) => e.date.toDateString() === selectedDate.toDateString()
+              )
+              .map((e, i) => (
+                <li key={i}>📌 {e.text}</li>
+              ))}
+          </ul>
+        </div>
+      )}
+
+      {view === "galerie" && (
+        <div>
+          <h2>🖼️ Galerie</h2>
+          <p>Hier könnt ihr Fotos hochladen und gemeinsam ansehen.</p>
+        </div>
+      )}
+
+      {view === "notizen" && (
+        <div>
+          <h2>📝 Notizen</h2>
+          <p>Hier könnt ihr wichtige Gedanken und Erinnerungen festhalten.</p>
+        </div>
+      )}
     </main>
   );
 }
