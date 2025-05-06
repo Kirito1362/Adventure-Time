@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
@@ -6,8 +5,11 @@ import "react-calendar/dist/Calendar.css";
 export default function Home() {
   const [events, setEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [view, setView] = useState("home"); // Hier definieren wir den Zustand für die Ansicht
 
-  
+  const [newEvent, setNewEvent] = useState(""); // Für neue Event-Beschreibungen
+
+  // Lädt gespeicherte Events aus localStorage, wenn die Komponente geladen wird
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedEvents = localStorage.getItem("termine");
@@ -17,17 +19,20 @@ export default function Home() {
     }
   }, []);
 
- 
+  // Speichert Events in localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("termine", JSON.stringify(events));
     }
-  }, [events]); 
+  }, [events]);
 
+  // Funktion zum Hinzufügen eines neuen Termins
   const handleAddEvent = (date) => {
-    const newEvent = { date };
-    setEvents([...events, newEvent]);
+    const newEventObj = { date, text: newEvent };
+    setEvents([...events, newEventObj]);
+    setNewEvent(""); // Leert das Eingabefeld nach dem Hinzufügen
   };
+
   return (
     <main style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
       <h1>Unsere gemeinsame Seite 💑</h1>
@@ -47,19 +52,25 @@ export default function Home() {
       {view === "kalender" && (
         <div>
           <h2>📅 Kalender</h2>
-          <Calendar onChange={setSelectedDate} value={selectedDate}  tileContent={({ date, view }) =>
-    view === "month" &&
-    events.some(e => e.date.toDateString() === date.toDateString()) ? (
-      <div style={{ 
-        height: "6px", 
-        width: "6px", 
-        margin: "0 auto", 
-        marginTop: "2px",
-        borderRadius: "50%", 
-        background: "red" 
-      }}></div>
-    ) : null
-  } />
+          <Calendar
+            onChange={setSelectedDate}
+            value={selectedDate}
+            tileContent={({ date, view }) =>
+              view === "month" &&
+              events.some((e) => e.date.toDateString() === date.toDateString()) ? (
+                <div
+                  style={{
+                    height: "6px",
+                    width: "6px",
+                    margin: "0 auto",
+                    marginTop: "2px",
+                    borderRadius: "50%",
+                    background: "red",
+                  }}
+                ></div>
+              ) : null
+            }
+          />
           <p style={{ marginTop: "1rem" }}>
             Ausgewählt: <strong>{selectedDate.toDateString()}</strong>
           </p>
@@ -71,7 +82,9 @@ export default function Home() {
             style={{ marginTop: "0.5rem", marginRight: "0.5rem" }}
           />
 
-          <button onClick={addEvent}>➕ Termin hinzufügen</button>
+          <button onClick={() => handleAddEvent(selectedDate)}>
+            ➕ Termin hinzufügen
+          </button>
 
           <ul style={{ marginTop: "1rem" }}>
             {events
