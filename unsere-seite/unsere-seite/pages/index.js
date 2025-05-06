@@ -9,11 +9,14 @@ export default function Home() {
   const savedEvents = localStorage.getItem("termine");
   if (savedEvents) {
     setEvents(JSON.parse(savedEvents));
+    if (typeof window !== "undefined") {
+    const savedEvents = localStorage.getItem("termine");
+    if (savedEvents) {
+      setEvents(JSON.parse(savedEvents));
+      localStorage.setItem("termine", JSON.stringify(events));
+}, [events]);
   }
 }, []);
-  useEffect(() => {
-  localStorage.setItem("termine", JSON.stringify(events));
-}, [events]);
   const [view, setView] = useState("home");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [events, setEvents] = useState([]);
