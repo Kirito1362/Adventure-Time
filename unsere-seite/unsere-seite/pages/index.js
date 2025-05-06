@@ -1,13 +1,13 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { useEffect } from "react";
 
 export default function Home() {
   const [events, setEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
+  
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedEvents = localStorage.getItem("termine");
@@ -16,12 +16,13 @@ export default function Home() {
       }
     }
   }, []);
-  
+
+ 
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("termine", JSON.stringify(events));
     }
-  }, [events]);
+  }, [events]); 
 
   const handleAddEvent = (date) => {
     const newEvent = { date };
