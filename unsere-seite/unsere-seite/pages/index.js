@@ -34,23 +34,17 @@ export default function Home() {
       {view === "kalender" && (
         <div>
           <h2>📅 Kalender</h2>
-          <Calendar
-  onChange={setSelectedDate}
-  value={selectedDate}
-  tileContent={({ date, view }) =>
-    view === "month" &&
-    events.some(e => e.date.toDateString() === date.toDateString()) ? (
-      <div style={{ 
-        height: "6px", 
-        width: "6px", 
-        margin: "0 auto", 
-        marginTop: "2px",
-        borderRadius: "50%", 
-        background: "red" 
-      }}></div>
-    ) : null
-  }
-/>
+          <Calendar onChange={setSelectedDate} value={selectedDate} />
+          <p style={{ marginTop: "1rem" }}>
+            Ausgewählt: <strong>{selectedDate.toDateString()}</strong>
+          </p>
+          <input
+            type="text"
+            placeholder="Terminbeschreibung"
+            value={newEvent}
+            onChange={(e) => setNewEvent(e.target.value)}
+            style={{ marginTop: "0.5rem", marginRight: "0.5rem" }}
+          />
 
           <button onClick={addEvent}>➕ Termin hinzufügen</button>
 
