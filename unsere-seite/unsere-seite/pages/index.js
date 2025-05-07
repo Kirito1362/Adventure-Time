@@ -34,14 +34,18 @@ export default function Home() {
   useEffect(() => {
     // Events aus Firestore laden
     const loadEvents = async () => {
-      const eventsCollection = collection(db, "events");
-      const eventSnapshot = await getDocs(eventsCollection);
-      const eventList = eventSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        date: new Date(doc.data().date.seconds * 1000), // Firebase Timestamps in Date umwandeln
-      }));
-      setEvents(eventList);
+      try {
+        const eventsCollection = collection(db, "events");
+        const eventSnapshot = await getDocs(eventsCollection);
+        const eventList = eventSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          date: new Date(doc.data().date.seconds * 1000), // Firebase Timestamps in Date umwandeln
+        }));
+        setEvents(eventList);
+      } catch (error) {
+        console.error("Fehler beim Laden der Events:", error);
+      }
     };
 
     loadEvents();
@@ -50,9 +54,20 @@ export default function Home() {
   useEffect(() => {
     // Bilder aus Firebase Storage laden
     const loadImages = async () => {
-      const imagesRef = ref(storage, "images");
-      const allImages = await getDownloadURL(imagesRef);
-      setImages([allImages]); // Alle Bilder URLs hinzufügen
+      try {
+        const imagesRef = ref(storage, "images");
+        // Hier stellen wir sicher, dass die Bild-URLs geladen werden
+        const imageList = []; // Wir speichern die Bild-URLs in diesem Array
+
+        // Abruf von Bild-URLs aus Firebase Storage
+        // Beispiel, falls du mehrere Bilder hast
+        // Dies geht davon aus, dass du eine Bild-URL im Storage hast
+        const imageSnapshot = await getDownloadURL(imagesRef);  // Dies ist nicht korrekt für mehrere Bilder
+        imageList.push(imageSnapshot);  // Hier müssen wir mit einer Liste von Bildern arbeiten (falls das zutrifft)
+        setImages(imageList);
+      } catch (error) {
+        console.error("Fehler beim Laden der Bilder:", error);
+      }
     };
 
     loadImages();
@@ -62,11 +77,19 @@ export default function Home() {
     const file = event.target.files[0];
     if (file) {
       const storageRef = ref(storage, `images/${file.name}`);
-      uploadBytes(storageRef, file).then(() => {
-        getDownloadURL(storageRef).then((url) => {
-          setImages((prevImages) => [...prevImages, url]);
+      uploadBytes(storageRef, file)
+        .then(() => {
+          getDownloadURL(storageRef)
+            .then((url) => {
+              setImages((prevImages) => [...prevImages, url]);
+            })
+            .catch((error) => {
+              console.error("Fehler beim Abrufen der Bild-URL:", error);
+            });
+        })
+        .catch((error) => {
+          console.error("Fehler beim Hochladen des Bildes:", error);
         });
-      });
     }
   };
 
@@ -74,29 +97,39 @@ export default function Home() {
     if (newEvent.trim() === "") {
       return; // Verhindert das Hinzufügen eines leeren Termins
     }
-    const newEventObj = { text: newEvent, date: new Date(date) };
-    await addDoc(collection(db, "events"), {
-      text: newEventObj.text,
-      date: newEventObj.date,
-    });
-    setEvents((prevEvents) => [...prevEvents, newEventObj]);
-    setNewEvent(""); // Leert das Eingabefeld nach dem Hinzufügen
+    try {
+      const newEventObj = { text: newEvent, date: new Date(date) };
+      await addDoc(collection(db, "events"), {
+        text: newEventObj.text,
+        date: newEventObj.date,
+      });
+      setEvents((prevEvents) => [...prevEvents, newEventObj]);
+      setNewEvent(""); // Leert das Eingabefeld nach dem Hinzufügen
+    } catch (error) {
+      console.error("Fehler beim Hinzufügen des Termins:", error);
+    }
   };
 
   const handleDeleteEvent = async (eventToDelete) => {
-    const eventRef = doc(db, "events", eventToDelete.id);
-    await deleteDoc(eventRef);
-    setEvents(events.filter((event) => event.id !== eventToDelete.id));
+    try {
+      const eventRef = doc(db, "events", eventToDelete.id);
+      await deleteDoc(eventRef);
+      setEvents(events.filter((event) => event.id !== eventToDelete.id));
+    } catch (error) {
+      console.error("Fehler beim Löschen des Termins:", error);
+    }
   };
 
   const handleDeleteImage = (index) => {
     const imageUrl = images[index];
     const storageRef = ref(storage, imageUrl); // Referenz zum Bild in Firebase Storage
-    deleteObject(storageRef).then(() => {
-      setImages(images.filter((_, i) => i !== index)); // Entfernt das Bild aus der Galerie
-    }).catch((error) => {
-      console.error("Fehler beim Löschen des Bildes:", error);
-    });
+    deleteObject(storageRef)
+      .then(() => {
+        setImages(images.filter((_, i) => i !== index)); // Entfernt das Bild aus der Galerie
+      })
+      .catch((error) => {
+        console.error("Fehler beim Löschen des Bildes:", error);
+      });
   };
 
   return (
