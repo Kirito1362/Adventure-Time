@@ -1,11 +1,33 @@
+import React, { useEffect } from 'react';
+
+// Importiere Supabase
 import { createClient } from '@supabase/supabase-js';
 
-// Deine Supabase-URL und API-Schlüssel
-const supabaseUrl = 'https://hbxfwqacszovbjqulqnh.supabase.co'; // Ersetze dies mit deinem Supabase-URL
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhieGZ3cWFjc3pvdmJqcXVscW5oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY1ODAyMzksImV4cCI6MjA2MjE1NjIzOX0.qT9iYElciOS5w-aRJhik5fmCBtSVOUH0p0Drg8R9u7Y'; // Dein öffentlicher API-Schlüssel von Supabase
-
-// Supabase-Client initialisieren
+const supabaseUrl = 'https://your-project.supabase.co';
+const supabaseKey = 'your-anon-key';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Exportiere den Supabase-Client
-export default supabase;
+const SupabaseClient = () => {
+  useEffect(() => {
+    // Deine Supabase-Logik hier
+    const getData = async () => {
+      const { data, error } = await supabase.from('your-table').select('*');
+      if (error) {
+        console.error(error);
+      } else {
+        console.log(data);
+      }
+    };
+
+    getData();
+  }, []);
+
+  return (
+    <div>
+      <h1>Supabase Client</h1>
+      <p>Hier kannst du mit Supabase arbeiten!</p>
+    </div>
+  );
+};
+
+export default SupabaseClient;
