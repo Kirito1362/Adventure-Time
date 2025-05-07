@@ -1,27 +1,9 @@
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.0.0/dist/umd/supabase.js"></script>
+
 import { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 
-// Firebase importieren
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-
-// Firebase Konfiguration
-const firebaseConfig = {
-  apiKey: "AIzaSyCN-yv1cM-tyYBjToFrxDmLSxYT83W5dCE",
-  authDomain: "gemeinsamewebsite.firebaseapp.com",
-  projectId: "gemeinsamewebsite",
-  storageBucket: "gemeinsamewebsite.firebasestorage.app",
-  messagingSenderId: "691979739465",
-  appId: "1:691979739465:web:6d4baae77ac3423269ba98",
-  measurementId: "G-9M7ZSZ4JL4"
-};
-
-// Firebase initialisieren
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app); // Firestore initialisieren
-const storage = getStorage(app); // Firebase Storage initialisieren
 
 export default function Home() {
   const [events, setEvents] = useState([]);
