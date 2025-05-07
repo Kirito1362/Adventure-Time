@@ -51,11 +51,8 @@ export default function Home() {
     // Bilder aus Firebase Storage laden
     const loadImages = async () => {
       const imagesRef = ref(storage, "images");
-      const imageList = [];
-      
       const allImages = await getDownloadURL(imagesRef);
-      imageList.push(allImages);
-      setImages(imageList);
+      setImages([allImages]); // Alle Bilder URLs hinzufügen
     };
 
     loadImages();
@@ -90,6 +87,16 @@ export default function Home() {
     const eventRef = doc(db, "events", eventToDelete.id);
     await deleteDoc(eventRef);
     setEvents(events.filter((event) => event.id !== eventToDelete.id));
+  };
+
+  const handleDeleteImage = (index) => {
+    const imageUrl = images[index];
+    const storageRef = ref(storage, imageUrl); // Referenz zum Bild in Firebase Storage
+    deleteObject(storageRef).then(() => {
+      setImages(images.filter((_, i) => i !== index)); // Entfernt das Bild aus der Galerie
+    }).catch((error) => {
+      console.error("Fehler beim Löschen des Bildes:", error);
+    });
   };
 
   return (
