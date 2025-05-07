@@ -1,11 +1,14 @@
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-  import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-  import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+import { useState, useEffect } from "react";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 
-  
-  const firebaseConfig = {
+// Firebase importieren
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+
+// Firebase Konfiguration
+const firebaseConfig = {
   apiKey: "AIzaSyCN-yv1cM-tyYBjToFrxDmLSxYT83W5dCE",
   authDomain: "gemeinsamewebsite.firebaseapp.com",
   projectId: "gemeinsamewebsite",
@@ -14,17 +17,11 @@
   appId: "1:691979739465:web:6d4baae77ac3423269ba98",
   measurementId: "G-9M7ZSZ4JL4"
 };
- 
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-  const db = getFirestore(app); // Firestore initialisieren
-  const storage = getStorage(app); // Firebase Storage initialisieren
-</script>
 
-import { useState, useEffect } from "react";
-import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css";
-
+// Firebase initialisieren
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app); // Firestore initialisieren
+const storage = getStorage(app); // Firebase Storage initialisieren
 
 export default function Home() {
   const [events, setEvents] = useState([]);
@@ -34,8 +31,8 @@ export default function Home() {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  
   useEffect(() => {
+    // Events aus Firestore laden
     const loadEvents = async () => {
       const eventsCollection = collection(db, "events");
       const eventSnapshot = await getDocs(eventsCollection);
@@ -50,28 +47,12 @@ export default function Home() {
     loadEvents();
   }, []);
 
-  
   useEffect(() => {
-    const saveEvents = async () => {
-      if (events.length > 0) {
-        for (const event of events) {
-          await addDoc(collection(db, "events"), {
-            text: event.text,
-            date: event.date,
-          });
-        }
-      }
-    };
-
-    saveEvents();
-  }, [events]);
-
-  
-  useEffect(() => {
+    // Bilder aus Firebase Storage laden
     const loadImages = async () => {
       const imagesRef = ref(storage, "images");
       const imageList = [];
-     
+      
       const allImages = await getDownloadURL(imagesRef);
       imageList.push(allImages);
       setImages(imageList);
@@ -80,7 +61,6 @@ export default function Home() {
     loadImages();
   }, []);
 
-  
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -93,15 +73,6 @@ export default function Home() {
     }
   };
 
-  
-  const handleDeleteImage = async (indexToDelete) => {
-    const imageToDelete = images[indexToDelete];
-    const imageRef = ref(storage, imageToDelete);
-    await deleteObject(imageRef);
-    setImages((prevImages) => prevImages.filter((_, i) => i !== indexToDelete));
-  };
-
-  
   const handleAddEvent = async (date) => {
     if (newEvent.trim() === "") {
       return; // Verhindert das Hinzufügen eines leeren Termins
@@ -115,7 +86,6 @@ export default function Home() {
     setNewEvent(""); // Leert das Eingabefeld nach dem Hinzufügen
   };
 
-  
   const handleDeleteEvent = async (eventToDelete) => {
     const eventRef = doc(db, "events", eventToDelete.id);
     await deleteDoc(eventRef);
