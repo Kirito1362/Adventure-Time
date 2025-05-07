@@ -1,7 +1,32 @@
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+  import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+  // Deine Firebase-Konfiguration
+  const firebaseConfig = {
+    apiKey: "AIzaSyCN-yv1cM-tyYBjToFrxDmLSxYT83W5dCE",
+    authDomain: "gemeinsamewebsite.firebaseapp.com",
+    projectId: "gemeinsamewebsite",
+    storageBucket: "gemeinsamewebsite.firebasestorage.app",
+    messagingSenderId: "691979739465",
+    appId: "1:691979739465:web:6d4baae77ac3423269ba98",
+    measurementId: "G-9M7ZSZ4JL4"
+  };
+
+  // Firebase initialisieren
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getFirestore(app); // Firestore initialisieren
+  const storage = getStorage(app); // Firebase Storage initialisieren
+</script>
+
 import { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 
+// Die Home-Komponente
 export default function Home() {
   const [events, setEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -10,110 +35,104 @@ export default function Home() {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
 
-// Lade gespeicherte Bilder
-useEffect(() => {
-  if (typeof window !== "undefined") {
-    const savedImages = localStorage.getItem("bilder");
-    if (savedImages) {
-      setImages(JSON.parse(savedImages));
-    }
-  }
-}, []);
-
-// Speichere Bilder bei Änderungen
-useEffect(() => {
-  if (typeof window !== "undefined") {
-    localStorage.setItem("bilder", JSON.stringify(images));
-  }
-}, [images]);
-
-// Bild als Base64 lesen
-const handleImageUpload = (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImages((prevImages) => [...prevImages, reader.result]);
-    };
-    reader.readAsDataURL(file);
-  }
-};
-
-// Löschen eines Bildes
-const handleDeleteImage = (indexToDelete) => {
-  const updatedImages = images.filter((_, i) => i !== indexToDelete);
-  setImages(updatedImages);
-};
-
-  // Lädt Events aus localStorage und überprüft auf Fehler
+  // Lädt Events aus Firebase Firestore
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const savedEvents = localStorage.getItem("termine");
-        if (savedEvents) {
-          const parsedEvents = JSON.parse(savedEvents);
-          // Stelle sicher, dass date als Date-Objekt gespeichert wird
-          const eventsWithDate = parsedEvents.map((event) => ({
-            ...event,
-            date: new Date(event.date),
-          }));
-          setEvents(eventsWithDate);
-        }
-      } catch (error) {
-        console.error("Fehler beim Laden der Termine aus localStorage:", error);
-      }
-    }
+    const loadEvents = async () => {
+      const eventsCollection = collection(db, "events");
+      const eventSnapshot = await getDocs(eventsCollection);
+      const eventList = eventSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        date: new Date(doc.data().date.seconds * 1000), // Firebase Timestamps in Date umwandeln
+      }));
+      setEvents(eventList);
+    };
+
+    loadEvents();
   }, []);
 
-  // Speichert Events in localStorage mit Fehlerbehandlung
+  // Speichert Events in Firebase Firestore
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        // Stelle sicher, dass date immer ein Date-Objekt ist
-        const eventsToSave = events.map((event) => ({
-          ...event,
-          date: event.date.toISOString(), // Speichern als ISO-String
-        }));
-        localStorage.setItem("termine", JSON.stringify(eventsToSave));
-      } catch (error) {
-        console.error("Fehler beim Speichern der Termine in localStorage:", error);
+    const saveEvents = async () => {
+      if (events.length > 0) {
+        for (const event of events) {
+          await addDoc(collection(db, "events"), {
+            text: event.text,
+            date: event.date,
+          });
+        }
       }
-    }
+    };
+
+    saveEvents();
   }, [events]);
 
+  // Lädt Bilder aus Firebase Storage
+  useEffect(() => {
+    const loadImages = async () => {
+      const imagesRef = ref(storage, "images");
+      const imageList = [];
+      // Holen der Download-URLs der Bilder
+      const allImages = await getDownloadURL(imagesRef);
+      imageList.push(allImages);
+      setImages(imageList);
+    };
+
+    loadImages();
+  }, []);
+
+  // Bild hochladen
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const storageRef = ref(storage, `images/${file.name}`);
+      uploadBytes(storageRef, file).then(() => {
+        getDownloadURL(storageRef).then((url) => {
+          setImages((prevImages) => [...prevImages, url]);
+        });
+      });
+    }
+  };
+
+  // Löscht ein Bild aus Firebase Storage
+  const handleDeleteImage = async (indexToDelete) => {
+    const imageToDelete = images[indexToDelete];
+    const imageRef = ref(storage, imageToDelete);
+    await deleteObject(imageRef);
+    setImages((prevImages) => prevImages.filter((_, i) => i !== indexToDelete));
+  };
+
   // Fügt einen neuen Termin hinzu
-  const handleAddEvent = (date) => {
+  const handleAddEvent = async (date) => {
     if (newEvent.trim() === "") {
       return; // Verhindert das Hinzufügen eines leeren Termins
     }
-    const newEventObj = { date: new Date(date), text: newEvent };
+    const newEventObj = { text: newEvent, date: new Date(date) };
+    await addDoc(collection(db, "events"), {
+      text: newEventObj.text,
+      date: newEventObj.date,
+    });
     setEvents((prevEvents) => [...prevEvents, newEventObj]);
     setNewEvent(""); // Leert das Eingabefeld nach dem Hinzufügen
   };
 
   // Löscht einen Termin
-  const handleDeleteEvent = (eventToDelete) => {
-    const updatedEvents = events.filter(
-      (event) => event !== eventToDelete
-    );
-    setEvents(updatedEvents); // Aktualisiert den State
+  const handleDeleteEvent = async (eventToDelete) => {
+    const eventRef = doc(db, "events", eventToDelete.id);
+    await deleteDoc(eventRef);
+    setEvents(events.filter((event) => event.id !== eventToDelete.id));
   };
 
   return (
     <main style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
       <h1>Unsere gemeinsame Seite 💑</h1>
       <div style={{ marginBottom: "1rem" }}>
-        <button onClick={() => setView("kalender")}>📅 Kalender</button>{" "}
-        <button onClick={() => setView("galerie")}>🖼️ Galerie</button>{" "}
+        <button onClick={() => setView("kalender")}>📅 Kalender</button>
+        <button onClick={() => setView("galerie")}>🖼️ Galerie</button>
         <button onClick={() => setView("notizen")}>📝 Notizen</button>
       </div>
 
-      {view === "home" && (
-        <p>
-          Willkommen! Nutzt das Menü oben, um Termine, Fotos oder Notizen zu
-          teilen.
-        </p>
-      )}
+      {view === "home" && <p>Willkommen! Nutzt das Menü oben, um Termine, Fotos oder Notizen zu teilen.</p>}
 
       {view === "kalender" && (
         <div>
@@ -122,8 +141,7 @@ const handleDeleteImage = (indexToDelete) => {
             onChange={setSelectedDate}
             value={selectedDate}
             tileContent={({ date, view }) =>
-              view === "month" &&
-              events.some((e) => e.date.toDateString() === date.toDateString()) ? (
+              view === "month" && events.some((e) => e.date.toDateString() === date.toDateString()) ? (
                 <div
                   style={{
                     height: "6px",
@@ -147,16 +165,10 @@ const handleDeleteImage = (indexToDelete) => {
             onChange={(e) => setNewEvent(e.target.value)}
             style={{ marginTop: "0.5rem", marginRight: "0.5rem" }}
           />
-
-          <button onClick={() => handleAddEvent(selectedDate)}>
-            ➕ Termin hinzufügen
-          </button>
-
+          <button onClick={() => handleAddEvent(selectedDate)}>➕ Termin hinzufügen</button>
           <ul style={{ marginTop: "1rem" }}>
             {events
-              .filter(
-                (e) => e.date.toDateString() === selectedDate.toDateString()
-              )
+              .filter((e) => e.date.toDateString() === selectedDate.toDateString())
               .map((e, i) => (
                 <li key={i}>
                   📌 {e.text}
@@ -179,95 +191,88 @@ const handleDeleteImage = (indexToDelete) => {
       )}
 
       {view === "galerie" && (
-  <div>
-    <h2>🖼️ Galerie</h2>
-    <input
-      type="file"
-      accept="image/*"
-      onChange={handleImageUpload}
-      style={{ marginBottom: "1rem" }}
-    />
+        <div>
+          <h2>🖼️ Galerie</h2>
+          <input type="file" accept="image/*" onChange={handleImageUpload} style={{ marginBottom: "1rem" }} />
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+            {images.map((img, index) => (
+              <div key={index} style={{ position: "relative" }}>
+                <img
+                  src={img}
+                  alt={`Bild ${index}`}
+                  style={{
+                    width: "150px",
+                    height: "150px",
+                    objectFit: "cover",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setSelectedImage(img)}
+                />
+                <button
+                  onClick={() => handleDeleteImage(index)}
+                  style={{
+                    position: "absolute",
+                    top: 5,
+                    right: 5,
+                    background: "rgba(255,0,0,0.7)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "50%",
+                    cursor: "pointer",
+                  }}
+                >
+                  ✖
+                </button>
+              </div>
+            ))}
+          </div>
 
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-      {images.map((img, index) => (
-        <div key={index} style={{ position: "relative" }}>
-          <img
-            src={img}
-            alt={`Bild ${index}`}
-            style={{
-              width: "150px",
-              height: "150px",
-              objectFit: "cover",
-              cursor: "pointer",
-            }}
-            onClick={() => setSelectedImage(img)}
-          />
-          <button
-            onClick={() => handleDeleteImage(index)}
-            style={{
-              position: "absolute",
-              top: 5,
-              right: 5,
-              background: "rgba(255,0,0,0.7)",
-              color: "white",
-              border: "none",
-              borderRadius: "50%",
-              cursor: "pointer",
-            }}
-          >
-            ✖
-          </button>
+          {selectedImage && (
+            <div
+              onClick={() => setSelectedImage(null)}
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: "100vw",
+                height: "100vh",
+                background: "rgba(0,0,0,0.8)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                zIndex: 1000,
+              }}
+            >
+              <img
+                src={selectedImage}
+                alt="Vorschau"
+                style={{
+                  maxWidth: "90%",
+                  maxHeight: "90%",
+                  borderRadius: "10px",
+                  boxShadow: "0 0 10px rgba(0,0,0,0.5)",
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <button
+                onClick={() => setSelectedImage(null)}
+                style={{
+                  position: "absolute",
+                  top: "20px",
+                  right: "30px",
+                  fontSize: "2rem",
+                  color: "white",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                ❌
+              </button>
+            </div>
+          )}
         </div>
-      ))}
-    </div>
-
-    {selectedImage && (
-      <div
-        onClick={() => setSelectedImage(null)}
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100vw",
-          height: "100vh",
-          background: "rgba(0,0,0,0.8)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          zIndex: 1000,
-        }}
-      >
-        <img
-          src={selectedImage}
-          alt="Vorschau"
-          style={{
-            maxWidth: "90%",
-            maxHeight: "90%",
-            borderRadius: "10px",
-            boxShadow: "0 0 10px rgba(0,0,0,0.5)",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        />
-        <button
-          onClick={() => setSelectedImage(null)}
-          style={{
-            position: "absolute",
-            top: "20px",
-            right: "30px",
-            fontSize: "2rem",
-            color: "white",
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          ❌
-        </button>
-      </div>
-    )}
-  </div>
-)}
-
+      )}
 
       {view === "notizen" && (
         <div>
