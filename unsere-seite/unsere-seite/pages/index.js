@@ -26,7 +26,7 @@ export default function Home() {
       const supabaseClient = createClient(supabaseUrl, supabaseKey);
       setSupabase(supabaseClient);
     }
-  }, []);
+  }, []); // Nur einmal beim Initialisieren des Clients
 
   // Lade Events nur einmal
   useEffect(() => {
@@ -53,7 +53,6 @@ export default function Home() {
   useEffect(() => {
     if (!supabase) return;
 
-    // Subscription nur im Client aktivieren
     const eventSubscription = supabase
       .from("events")
       .on("INSERT", (payload) => {
@@ -68,18 +67,8 @@ export default function Home() {
     return () => {
       supabase.removeSubscription(eventSubscription);
     };
-  }, [supabase]); // Nur wenn supabase existiert
-  
-useEffect(() => {
-  // Stelle sicher, dass der Supabase Client nur im Client geladen wird
-  if (typeof window !== "undefined") {
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
-    setSupabase(supabaseClient);
+  }, [supabase]);
 
-    // Füge das console.log hier ein, um zu überprüfen, ob der Supabase Client korrekt initialisiert wurde
-    console.log('Supabase Client initialisiert:', supabaseClient); // Hier ist das log
-  }
-}, []);
   // Bilder hochladen
   useEffect(() => {
     if (!supabase) return;
@@ -147,6 +136,19 @@ useEffect(() => {
     }
 
     setEvents(events.filter((e) => e.id !== eventToDelete.id));
+  };
+
+  const handleDeleteImage = async (index) => {
+    const imageUrl = images[index];
+    const fileName = imageUrl.split("/").pop();
+    
+    const { error } = await supabase.storage.from("images").remove([`public/${fileName}`]);
+    if (error) {
+      console.error("Fehler beim Löschen des Bildes:", error.message);
+      return;
+    }
+
+    setImages(images.filter((_, i) => i !== index));
   };
 
   return (
