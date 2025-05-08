@@ -32,23 +32,24 @@ export default function Home() {
 
   // Realtime-Datenabonnement nur im Client
   useEffect(() => {
-  if (typeof window === "undefined") return; // Stelle sicher, dass es nur im Client läuft
+    // Stelle sicher, dass die Subscription nur im Client läuft
+    if (typeof window === "undefined") return; // Nur im Client ausführen
 
-  const eventSubscription = supabase
-    .from("events")
-    .on("INSERT", (payload) => {
-      setEvents((prev) => [...prev, { ...payload.new, date: new Date(payload.new.date) }]);
-    })
-    .on("DELETE", (payload) => {
-      setEvents((prev) => prev.filter((e) => e.id !== payload.old.id));
-    })
-    .subscribe();
+    const eventSubscription = supabase
+      .from("events")
+      .on("INSERT", (payload) => {
+        setEvents((prev) => [...prev, { ...payload.new, date: new Date(payload.new.date) }]);
+      })
+      .on("DELETE", (payload) => {
+        setEvents((prev) => prev.filter((e) => e.id !== payload.old.id));
+      })
+      .subscribe();
 
-  // Aufräumen
-  return () => {
-    supabase.removeSubscription(eventSubscription);
-  };
-}, []);
+    // Aufräumen: Entfernen der Subscription
+    return () => {
+      supabase.removeSubscription(eventSubscription);
+    };
+  }, []); // Nur einmal ausführen (nach dem ersten Rendern)
 
   useEffect(() => {
     // Lade Bilder aus Supabase Storage
