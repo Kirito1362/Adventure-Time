@@ -65,7 +65,7 @@ export default function Home() {
 
     // Aufräumen der Subscription bei Demontage
     return () => {
-      supabase.removeSubscription(eventSubscription);
+      supabase.removeSubscription(eventSubscription);  // Entfernen der Subscription bei Demontage
     };
   }, [supabase]);
 
