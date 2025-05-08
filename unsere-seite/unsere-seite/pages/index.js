@@ -32,8 +32,8 @@ export default function Home() {
 
   // Realtime-Datenabonnement nur im Client
   useEffect(() => {
-    // Stelle sicher, dass die Subscription nur im Client läuft
-    if (typeof window === "undefined") return; // Nur im Client ausführen
+    // Nur im Client ausführen, wenn "window" existiert
+    if (typeof window === "undefined") return;
 
     const eventSubscription = supabase
       .from("events")
@@ -45,9 +45,11 @@ export default function Home() {
       })
       .subscribe();
 
-    // Aufräumen: Entfernen der Subscription
+    // Aufräumen: Entfernen der Subscription bei Komponenten-Demontage
     return () => {
-      supabase.removeSubscription(eventSubscription);
+      if (typeof window !== "undefined") {
+        supabase.removeSubscription(eventSubscription);
+      }
     };
   }, []); // Nur einmal ausführen (nach dem ersten Rendern)
 
