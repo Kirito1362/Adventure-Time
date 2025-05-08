@@ -1,9 +1,7 @@
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.0.0/dist/umd/supabase.js"></script>
-
 import { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-
+import { supabase } from "../supabaseClient";
 
 export default function Home() {
   const [events, setEvents] = useState([]);
@@ -14,19 +12,17 @@ export default function Home() {
   const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
-    // Events aus Firestore laden
     const loadEvents = async () => {
       try {
-        const eventsCollection = collection(db, "events");
-        const eventSnapshot = await getDocs(eventsCollection);
-        const eventList = eventSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          date: new Date(doc.data().date.seconds * 1000), // Firebase Timestamps in Date umwandeln
+        const { data, error } = await supabase.from("events").select("*");
+        if (error) throw error;
+        const eventList = data.map((e) => ({
+          ...e,
+          date: new Date(e.date),
         }));
         setEvents(eventList);
       } catch (error) {
-        console.error("Fehler beim Laden der Events:", error);
+        console.error("Fehler beim Laden der Events:", error.message);
       }
     };
 
@@ -34,84 +30,84 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Bilder aus Firebase Storage laden
     const loadImages = async () => {
       try {
-        const imagesRef = ref(storage, "images");
-        // Hier stellen wir sicher, dass die Bild-URLs geladen werden
-        const imageList = []; // Wir speichern die Bild-URLs in diesem Array
+        const { data, error } = await supabase.storage.from("images").list("public", {
+          limit: 100,
+          offset: 0,
+        });
+        if (error) throw error;
 
-        // Abruf von Bild-URLs aus Firebase Storage
-        // Beispiel, falls du mehrere Bilder hast
-        // Dies geht davon aus, dass du eine Bild-URL im Storage hast
-        const imageSnapshot = await getDownloadURL(imagesRef);  // Dies ist nicht korrekt für mehrere Bilder
-        imageList.push(imageSnapshot);  // Hier müssen wir mit einer Liste von Bildern arbeiten (falls das zutrifft)
-        setImages(imageList);
+        const urls = await Promise.all(
+          data.map((file) => {
+            const { data: urlData } = supabase.storage.from("images").getPublicUrl(`public/${file.name}`);
+            return urlData.publicUrl;
+          })
+        );
+
+        setImages(urls);
       } catch (error) {
-        console.error("Fehler beim Laden der Bilder:", error);
+        console.error("Fehler beim Laden der Bilder:", error.message);
       }
     };
 
     loadImages();
   }, []);
 
-  const handleImageUpload = (event) => {
+  const handleImageUpload = async (event) => {
     const file = event.target.files[0];
-    if (file) {
-      const storageRef = ref(storage, `images/${file.name}`);
-      uploadBytes(storageRef, file)
-        .then(() => {
-          getDownloadURL(storageRef)
-            .then((url) => {
-              setImages((prevImages) => [...prevImages, url]);
-            })
-            .catch((error) => {
-              console.error("Fehler beim Abrufen der Bild-URL:", error);
-            });
-        })
-        .catch((error) => {
-          console.error("Fehler beim Hochladen des Bildes:", error);
-        });
+    if (!file) return;
+
+    const filePath = `public/${file.name}`;
+
+    const { error: uploadError } = await supabase.storage.from("images").upload(filePath, file);
+    if (uploadError) {
+      console.error("Fehler beim Hochladen:", uploadError.message);
+      return;
     }
+
+    const { data: urlData } = supabase.storage.from("images").getPublicUrl(filePath);
+    setImages((prev) => [...prev, urlData.publicUrl]);
+  };
+
+  const handleDeleteImage = async (index) => {
+    const url = images[index];
+    const pathParts = url.split("/");
+    const filename = pathParts[pathParts.length - 1];
+    const filePath = `public/${filename}`;
+
+    const { error } = await supabase.storage.from("images").remove([filePath]);
+    if (error) {
+      console.error("Fehler beim Löschen des Bildes:", error.message);
+      return;
+    }
+
+    setImages(images.filter((_, i) => i !== index));
   };
 
   const handleAddEvent = async (date) => {
-    if (newEvent.trim() === "") {
-      return; // Verhindert das Hinzufügen eines leeren Termins
+    if (newEvent.trim() === "") return;
+
+    const newEventObj = { text: newEvent, date: new Date(date).toISOString() };
+
+    const { error } = await supabase.from("events").insert([newEventObj]);
+    if (error) {
+      console.error("Fehler beim Hinzufügen des Termins:", error.message);
+      return;
     }
-    try {
-      const newEventObj = { text: newEvent, date: new Date(date) };
-      await addDoc(collection(db, "events"), {
-        text: newEventObj.text,
-        date: newEventObj.date,
-      });
-      setEvents((prevEvents) => [...prevEvents, newEventObj]);
-      setNewEvent(""); // Leert das Eingabefeld nach dem Hinzufügen
-    } catch (error) {
-      console.error("Fehler beim Hinzufügen des Termins:", error);
-    }
+
+    setEvents((prev) => [...prev, { ...newEventObj, date: new Date(newEventObj.date) }]);
+    setNewEvent("");
   };
 
   const handleDeleteEvent = async (eventToDelete) => {
-    try {
-      const eventRef = doc(db, "events", eventToDelete.id);
-      await deleteDoc(eventRef);
-      setEvents(events.filter((event) => event.id !== eventToDelete.id));
-    } catch (error) {
-      console.error("Fehler beim Löschen des Termins:", error);
+    const { error } = await supabase.from("events").delete().eq("id", eventToDelete.id);
+    if (error) {
+      console.error("Fehler beim Löschen des Termins:", error.message);
+      return;
     }
-  };
 
-  const handleDeleteImage = (index) => {
-    const imageUrl = images[index];
-    const storageRef = ref(storage, imageUrl); // Referenz zum Bild in Firebase Storage
-    deleteObject(storageRef)
-      .then(() => {
-        setImages(images.filter((_, i) => i !== index)); // Entfernt das Bild aus der Galerie
-      })
-      .catch((error) => {
-        console.error("Fehler beim Löschen des Bildes:", error);
-      });
+    setEvents(events.filter((e) => e.id !== eventToDelete.id));
   };
 
   return (
@@ -132,7 +128,7 @@ export default function Home() {
             onChange={setSelectedDate}
             value={selectedDate}
             tileContent={({ date, view }) =>
-              view === "month" && events.some((e) => e.date.toDateString() === date.toDateString()) ? (
+              view === "month" && events.some((e) => new Date(e.date).toDateString() === date.toDateString()) ? (
                 <div
                   style={{
                     height: "6px",
@@ -159,7 +155,7 @@ export default function Home() {
           <button onClick={() => handleAddEvent(selectedDate)}>➕ Termin hinzufügen</button>
           <ul style={{ marginTop: "1rem" }}>
             {events
-              .filter((e) => e.date.toDateString() === selectedDate.toDateString())
+              .filter((e) => new Date(e.date).toDateString() === selectedDate.toDateString())
               .map((e, i) => (
                 <li key={i}>
                   📌 {e.text}
