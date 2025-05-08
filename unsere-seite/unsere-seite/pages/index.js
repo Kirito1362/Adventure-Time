@@ -32,13 +32,14 @@ export default function Home() {
 
   // Realtime-Datenabonnement nur im Client
   useEffect(() => {
-    // Nur im Client ausführen, wenn "window" existiert
+    // Stelle sicher, dass der Code nur im Client ausgeführt wird
     if (typeof window === "undefined") return;
 
-    // Dynamischer Import von Supabase (um auf dem Server Fehler zu vermeiden)
+    // Dynamischer Import von Supabase und Subscription Setup im Client
     const loadSupabase = async () => {
       const { supabase } = await import("../supabaseClient.js");
 
+      // Füge Subscription hinzu
       const eventSubscription = supabase
         .from("events")
         .on("INSERT", (payload) => {
@@ -51,9 +52,7 @@ export default function Home() {
 
       // Aufräumen: Entfernen der Subscription bei Komponenten-Demontage
       return () => {
-        if (typeof window !== "undefined") {
-          supabase.removeSubscription(eventSubscription);
-        }
+        supabase.removeSubscription(eventSubscription);
       };
     };
 
