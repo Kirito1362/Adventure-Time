@@ -96,6 +96,11 @@ export default function Home() {
   };
 
   const handleDeleteEvent = async (eventToDelete) => {
+    if (!eventToDelete.id) {
+      console.error("Fehler: Die ID des Events ist ungültig");
+      return;
+    }
+
     const { error } = await supabase.from("events").delete().eq("id", eventToDelete.id);
     if (error) {
       console.error("Fehler beim Löschen des Termins:", error.message);
@@ -108,7 +113,7 @@ export default function Home() {
   const handleDeleteImage = async (index) => {
     const imageUrl = images[index];
     const fileName = imageUrl.split("/").pop();
-    
+
     const { error } = await supabase.storage.from("images").remove([`public/${fileName}`]);
     if (error) {
       console.error("Fehler beim Löschen des Bildes:", error.message);
