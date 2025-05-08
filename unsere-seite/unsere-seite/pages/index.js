@@ -69,7 +69,17 @@ export default function Home() {
       supabase.removeSubscription(eventSubscription);
     };
   }, [supabase]); // Nur wenn supabase existiert
+  
+useEffect(() => {
+  // Stelle sicher, dass der Supabase Client nur im Client geladen wird
+  if (typeof window !== "undefined") {
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+    setSupabase(supabaseClient);
 
+    // Füge das console.log hier ein, um zu überprüfen, ob der Supabase Client korrekt initialisiert wurde
+    console.log('Supabase Client initialisiert:', supabaseClient); // Hier ist das log
+  }
+}, []);
   // Bilder hochladen
   useEffect(() => {
     if (!supabase) return;
