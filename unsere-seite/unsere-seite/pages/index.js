@@ -96,6 +96,9 @@ export default function Home() {
   };
 
   const handleDeleteEvent = async (eventToDelete) => {
+    // Debugging-Ausgabe: Überprüfen, ob die ID korrekt ist
+    console.log("Versuche, folgendes Event zu löschen:", eventToDelete);
+
     if (!eventToDelete.id) {
       console.error("Fehler: Die ID des Events ist ungültig");
       return;
