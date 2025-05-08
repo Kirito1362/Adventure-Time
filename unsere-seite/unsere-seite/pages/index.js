@@ -28,8 +28,13 @@ export default function Home() {
     };
 
     loadEvents();
-    
-    // Echtzeit-Abonnement für neue Termine
+  }, []);
+
+  // Realtime-Datenabonnement nur im Client
+  useEffect(() => {
+    // Stelle sicher, dass das Realtime-Abonnement nur im Browser erfolgt
+    if (typeof window === "undefined") return; // Nur ausführen, wenn auf der Client-Seite
+
     const eventSubscription = supabase
       .from("events")
       .on("INSERT", (payload) => {
