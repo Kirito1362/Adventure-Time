@@ -7,7 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 
 // Supabase URL und Anon Key
 const supabaseUrl = "https://hbxfwqacszovbjqulqnh.supabase.co"; // Ändere es mit deiner Supabase URL
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhieGZ3cWFjc3pvdmJqcXVscW5oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY1ODAyMzksImV4cCI6MjA2MjE1NjIzOX0.qT9iYElciOS5w-aRJhik5fmCBtSVOUH0p0Drg8R9u7Y"; // Deine Supabase Anon Key
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhieGZ3cWFjc3pvdmJqcXVscW5oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY1ODAyMzksImV4cCI6MjA2MjE1NjIzOX0.qT9iYElciOS5w-aRJhik5fmCBtSVOUH0p0Drg8R9u7a"; // Deine Supabase Anon Key
 
 export default function Home() {
   const [events, setEvents] = useState([]);
@@ -17,46 +17,10 @@ export default function Home() {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  // Supabase Client innerhalb von useEffect importieren, um es nur im Client zu verwenden
-  const [supabase, setSupabase] = useState(null);
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
-
+  // Lade Events nur beim Initialisieren der Seite
   useEffect(() => {
-  if (!supabase) {
-    console.error("Supabase-Client ist nicht initialisiert.");
-    return;
- }
-
-  // Hier kannst du sicher sein, dass supabase initialisiert ist
-  const loadEvents = async () => {
-    try {
-      const { data, error } = await supabase.from("events").select("*");
-      if (error) throw error;
-     const eventList = data.map((e) => ({
-       ...e,
-       date: new Date(e.date),
-      }));
-     setEvents(eventList);
-    } catch (error) {
-     console.error("Fehler beim Laden der Events:", error.message);
-    }
-  };
-
-  loadEvents();
-}, [supabase]);
-
-  useEffect(() => {
-    // Stelle sicher, dass der Supabase Client nur im Client geladen wird
-    if (typeof window !== "undefined") {
-      const supabaseClient = createClient(supabaseUrl, supabaseKey);
-      setSupabase(supabaseClient);
-    }
-  }, []); // Nur einmal beim Initialisieren des Clients
-
-  // Lade Events nur einmal
-  useEffect(() => {
-    if (!supabase) return;
-
     const loadEvents = async () => {
       try {
         const { data, error } = await supabase.from("events").select("*");
@@ -72,14 +36,10 @@ export default function Home() {
     };
 
     loadEvents();
-  }, [supabase]);
+  }, []); // Der leere Array stellt sicher, dass die Events nur beim ersten Laden der Seite geladen werden
 
-  
-
-  // Bilder hochladen
+  // Lade Bilder nur beim Initialisieren der Seite
   useEffect(() => {
-    if (!supabase) return;
-
     const loadImages = async () => {
       try {
         const { data, error } = await supabase.storage.from("images").list("public", {
@@ -102,7 +62,7 @@ export default function Home() {
     };
 
     loadImages();
-  }, [supabase]);
+  }, []); // Dieser Effekt wird nur beim ersten Laden der Seite ausgeführt
 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
