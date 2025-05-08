@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { supabase } from "../supabaseClient.js"; // Importiere den Supabase-Client
+import { supabase } from "../supabaseClient.js"; // Supabase Client importieren
 
 export default function Home() {
   const [events, setEvents] = useState([]);
@@ -35,22 +35,29 @@ export default function Home() {
     // Nur im Client ausführen, wenn "window" existiert
     if (typeof window === "undefined") return;
 
-    const eventSubscription = supabase
-      .from("events")
-      .on("INSERT", (payload) => {
-        setEvents((prev) => [...prev, { ...payload.new, date: new Date(payload.new.date) }]);
-      })
-      .on("DELETE", (payload) => {
-        setEvents((prev) => prev.filter((e) => e.id !== payload.old.id));
-      })
-      .subscribe();
+    // Dynamischer Import von Supabase (um auf dem Server Fehler zu vermeiden)
+    const loadSupabase = async () => {
+      const { supabase } = await import("../supabaseClient.js");
 
-    // Aufräumen: Entfernen der Subscription bei Komponenten-Demontage
-    return () => {
-      if (typeof window !== "undefined") {
-        supabase.removeSubscription(eventSubscription);
-      }
+      const eventSubscription = supabase
+        .from("events")
+        .on("INSERT", (payload) => {
+          setEvents((prev) => [...prev, { ...payload.new, date: new Date(payload.new.date) }]);
+        })
+        .on("DELETE", (payload) => {
+          setEvents((prev) => prev.filter((e) => e.id !== payload.old.id));
+        })
+        .subscribe();
+
+      // Aufräumen: Entfernen der Subscription bei Komponenten-Demontage
+      return () => {
+        if (typeof window !== "undefined") {
+          supabase.removeSubscription(eventSubscription);
+        }
+      };
     };
+
+    loadSupabase();
   }, []); // Nur einmal ausführen (nach dem ersten Rendern)
 
   useEffect(() => {
