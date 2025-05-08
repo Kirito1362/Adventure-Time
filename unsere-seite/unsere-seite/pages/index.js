@@ -20,6 +20,31 @@ export default function Home() {
   // Supabase Client innerhalb von useEffect importieren, um es nur im Client zu verwenden
   const [supabase, setSupabase] = useState(null);
 
+
+  useEffect(() => {
+  if (!supabase) {
+    console.error("Supabase-Client ist nicht initialisiert.");
+    return;
+ }
+
+  // Hier kannst du sicher sein, dass supabase initialisiert ist
+  const loadEvents = async () => {
+    try {
+      const { data, error } = await supabase.from("events").select("*");
+      if (error) throw error;
+     const eventList = data.map((e) => ({
+       ...e,
+       date: new Date(e.date),
+      }));
+     setEvents(eventList);
+    } catch (error) {
+     console.error("Fehler beim Laden der Events:", error.message);
+    }
+  };
+
+  loadEvents();
+}, [supabase]);
+
   useEffect(() => {
     // Stelle sicher, dass der Supabase Client nur im Client geladen wird
     if (typeof window !== "undefined") {
