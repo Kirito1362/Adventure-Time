@@ -74,25 +74,7 @@ export default function Home() {
     loadEvents();
   }, [supabase]);
 
-  // Realtime-Datenabonnement nur im Client
-  useEffect(() => {
-    if (!supabase) return;
-
-    const eventSubscription = supabase
-      .from("events")
-      .on("INSERT", (payload) => {
-        setEvents((prev) => [...prev, { ...payload.new, date: new Date(payload.new.date) }]);
-      })
-      .on("DELETE", (payload) => {
-        setEvents((prev) => prev.filter((e) => e.id !== payload.old.id));
-      })
-      .subscribe();
-
-    // Aufräumen der Subscription bei Demontage
-    return () => {
-      supabase.removeSubscription(eventSubscription);  // Entfernen der Subscription bei Demontage
-    };
-  }, [supabase]);
+  
 
   // Bilder hochladen
   useEffect(() => {
