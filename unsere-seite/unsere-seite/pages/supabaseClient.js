@@ -30,4 +30,4 @@ const SupabaseClient = () => {
   );
 };
 
-export default SupabaseClient;
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
