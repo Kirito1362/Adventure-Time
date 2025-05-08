@@ -131,7 +131,7 @@ export default function Home() {
 
   return (
     <main style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
-      <h1>Unsere gemeinsame Seite 💑</h1>
+      <h1>SCHEIßE HAT DAS LANGE GEDAUERT!!!!1111!!!11!!</h1>
       <div style={{ marginBottom: "1rem" }}>
         <button onClick={() => setView("kalender")}>📅 Kalender</button>
         <button onClick={() => setView("galerie")}>🖼️ Galerie</button>
