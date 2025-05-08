@@ -126,7 +126,7 @@ export default function Home() {
     }
 
     // Entferne das Bild aus dem State (visuelle Aktualisierung)
-    setImages(images.filter((_, i) => i !== index));
+    setImages((prevImages) => prevImages.filter((_, i) => i !== index));
   };
 
   return (
