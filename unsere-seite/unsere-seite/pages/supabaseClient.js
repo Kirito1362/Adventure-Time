@@ -9,7 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const SupabaseClient = () => {
   useEffect(() => {
     const getData = async () => {
-      const { data, error } = await supabase.from('your-table').select('*');
+      const { data, error } = await supabase.from('events').select('*');
       if (error) {
         console.error('Fehler beim Abrufen der Daten:', error);
       } else {
