@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { supabase } from "../supabaseClient.js"; // Supabase Client importieren
+
+// Dynamischen Import von Supabase, um den Client nur im Browser zu verwenden
+import { createClient } from "@supabase/supabase-js";
+
+// Supabase URL und Anon Key
+const supabaseUrl = "https://xyzcompany.supabase.co"; // Ändere es mit deiner Supabase URL
+const supabaseKey = "your-supabase-key"; // Deine Supabase Anon Key
 
 export default function Home() {
   const [events, setEvents] = useState([]);
@@ -11,8 +17,21 @@ export default function Home() {
   const [images, setImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
 
+  // Supabase Client innerhalb von useEffect importieren, um es nur im Client zu verwenden
+  const [supabase, setSupabase] = useState(null);
+
   useEffect(() => {
-    // Lade Termine aus Supabase
+    // Stelle sicher, dass der Supabase Client nur im Client geladen wird
+    if (typeof window !== "undefined") {
+      const supabaseClient = createClient(supabaseUrl, supabaseKey);
+      setSupabase(supabaseClient);
+    }
+  }, []);
+
+  // Lade Events nur einmal
+  useEffect(() => {
+    if (!supabase) return;
+
     const loadEvents = async () => {
       try {
         const { data, error } = await supabase.from("events").select("*");
@@ -28,39 +47,33 @@ export default function Home() {
     };
 
     loadEvents();
-  }, []);
+  }, [supabase]);
 
   // Realtime-Datenabonnement nur im Client
   useEffect(() => {
-    // Stelle sicher, dass der Code nur im Client ausgeführt wird
-    if (typeof window === "undefined") return;
+    if (!supabase) return;
 
-    // Dynamischer Import von Supabase und Subscription Setup im Client
-    const loadSupabase = async () => {
-      const { supabase } = await import("../supabaseClient.js");
+    // Subscription nur im Client aktivieren
+    const eventSubscription = supabase
+      .from("events")
+      .on("INSERT", (payload) => {
+        setEvents((prev) => [...prev, { ...payload.new, date: new Date(payload.new.date) }]);
+      })
+      .on("DELETE", (payload) => {
+        setEvents((prev) => prev.filter((e) => e.id !== payload.old.id));
+      })
+      .subscribe();
 
-      // Füge Subscription hinzu
-      const eventSubscription = supabase
-        .from("events")
-        .on("INSERT", (payload) => {
-          setEvents((prev) => [...prev, { ...payload.new, date: new Date(payload.new.date) }]);
-        })
-        .on("DELETE", (payload) => {
-          setEvents((prev) => prev.filter((e) => e.id !== payload.old.id));
-        })
-        .subscribe();
-
-      // Aufräumen: Entfernen der Subscription bei Komponenten-Demontage
-      return () => {
-        supabase.removeSubscription(eventSubscription);
-      };
+    // Aufräumen der Subscription bei Demontage
+    return () => {
+      supabase.removeSubscription(eventSubscription);
     };
+  }, [supabase]); // Nur wenn supabase existiert
 
-    loadSupabase();
-  }, []); // Nur einmal ausführen (nach dem ersten Rendern)
-
+  // Bilder hochladen
   useEffect(() => {
-    // Lade Bilder aus Supabase Storage
+    if (!supabase) return;
+
     const loadImages = async () => {
       try {
         const { data, error } = await supabase.storage.from("images").list("public", {
@@ -83,7 +96,7 @@ export default function Home() {
     };
 
     loadImages();
-  }, []);
+  }, [supabase]);
 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
