@@ -1,12 +1,7 @@
 import { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { createClient } from '@supabase/supabase-js';
-
-// Supabase-Client direkt hier erstellen
-const supabaseUrl = 'https://hbxfwqacszovbjqulqnh.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhieGZ3cWFjc3pvdmJqcXVscW5oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY1ODAyMzksImV4cCI6MjA2MjE1NjIzOX0.qT9iYElciOS5w-aRJhik5fmCBtSVOUH0p0Drg8R9u7Y';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { supabase } from "../supabaseClient";
 
 export default function Home() {
   const [events, setEvents] = useState([]);
@@ -17,6 +12,7 @@ export default function Home() {
   const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
+    // Lade Termine aus Supabase
     const loadEvents = async () => {
       try {
         const { data, error } = await supabase.from("events").select("*");
@@ -32,9 +28,26 @@ export default function Home() {
     };
 
     loadEvents();
+    
+    // Echtzeit-Abonnement für neue Termine
+    const eventSubscription = supabase
+      .from("events")
+      .on("INSERT", (payload) => {
+        setEvents((prev) => [...prev, { ...payload.new, date: new Date(payload.new.date) }]);
+      })
+      .on("DELETE", (payload) => {
+        setEvents((prev) => prev.filter((e) => e.id !== payload.old.id));
+      })
+      .subscribe();
+
+    // Aufräumen
+    return () => {
+      supabase.removeSubscription(eventSubscription);
+    };
   }, []);
 
   useEffect(() => {
+    // Lade Bilder aus Supabase Storage
     const loadImages = async () => {
       try {
         const { data, error } = await supabase.storage.from("images").list("public", {
@@ -75,21 +88,6 @@ export default function Home() {
     setImages((prev) => [...prev, urlData.publicUrl]);
   };
 
-  const handleDeleteImage = async (index) => {
-    const url = images[index];
-    const pathParts = url.split("/");
-    const filename = pathParts[pathParts.length - 1];
-    const filePath = `public/${filename}`;
-
-    const { error } = await supabase.storage.from("images").remove([filePath]);
-    if (error) {
-      console.error("Fehler beim Löschen des Bildes:", error.message);
-      return;
-    }
-
-    setImages(images.filter((_, i) => i !== index));
-  };
-
   const handleAddEvent = async (date) => {
     if (newEvent.trim() === "") return;
 
@@ -123,8 +121,6 @@ export default function Home() {
         <button onClick={() => setView("galerie")}>🖼️ Galerie</button>
         <button onClick={() => setView("notizen")}>📝 Notizen</button>
       </div>
-
-      {view === "home" && <p>Willkommen! Nutzt das Menü oben, um Termine, Fotos oder Notizen zu teilen.</p>}
 
       {view === "kalender" && (
         <div>
@@ -218,58 +214,6 @@ export default function Home() {
               </div>
             ))}
           </div>
-
-          {selectedImage && (
-            <div
-              onClick={() => setSelectedImage(null)}
-              style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                width: "100vw",
-                height: "100vh",
-                background: "rgba(0,0,0,0.8)",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                zIndex: 1000,
-              }}
-            >
-              <img
-                src={selectedImage}
-                alt="Vorschau"
-                style={{
-                  maxWidth: "90%",
-                  maxHeight: "90%",
-                  borderRadius: "10px",
-                  boxShadow: "0 0 10px rgba(0,0,0,0.5)",
-                }}
-                onClick={(e) => e.stopPropagation()}
-              />
-              <button
-                onClick={() => setSelectedImage(null)}
-                style={{
-                  position: "absolute",
-                  top: "20px",
-                  right: "30px",
-                  fontSize: "2rem",
-                  color: "white",
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                ❌
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {view === "notizen" && (
-        <div>
-          <h2>📝 Notizen</h2>
-          <p>Hier könnt ihr wichtige Gedanken und Erinnerungen festhalten.</p>
         </div>
       )}
     </main>
