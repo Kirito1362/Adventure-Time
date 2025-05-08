@@ -116,14 +116,16 @@ export default function Home() {
 
   const handleDeleteImage = async (index) => {
     const imageUrl = images[index];
-    const fileName = imageUrl.split("/").pop();
+    const fileName = imageUrl.split("/").pop(); // Extrahiere den Dateinamen
 
+    // Lösche das Bild aus Supabase Storage
     const { error } = await supabase.storage.from("images").remove([`public/${fileName}`]);
     if (error) {
       console.error("Fehler beim Löschen des Bildes:", error.message);
       return;
     }
 
+    // Entferne das Bild aus dem State (visuelle Aktualisierung)
     setImages(images.filter((_, i) => i !== index));
   };
 
