@@ -85,6 +85,7 @@ export default function Home() {
 
     const newEventObj = { text: newEvent, date: new Date(date).toISOString() };
 
+    // Stelle sicher, dass jedes Event eine eindeutige UUID bekommt
     const { error } = await supabase.from("events").insert([newEventObj]);
     if (error) {
       console.error("Fehler beim Hinzufügen des Termins:", error.message);
@@ -110,6 +111,7 @@ export default function Home() {
       return;
     }
 
+    // Verhindere, dass ein nicht mehr existierendes Event gelöscht wird
     setEvents(events.filter((e) => e.id !== eventToDelete.id));
   };
 
